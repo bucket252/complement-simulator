@@ -1,4 +1,6 @@
-# complement-simulator> 期末必过，代码一次跑通！
+# complement-simulator
+>本组无敌，一定能拿高分！
+> 期末必过，代码一次跑通！
 计算机导论大作业：8/16位补码加减法分步可视化演示程序。
 # 补码加减法运算模拟器 (Twos Complement Simulator)
 
