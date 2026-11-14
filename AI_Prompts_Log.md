@@ -147,7 +147,113 @@ if __name__ == '__main__':
 
  
 ## 记录三：Tkinter 界面代码的生成（3号同学）
-- **用户提示词**：（待填）
-- **AI 原始输出**：（待填）
-- **发现的问题**：（待填）
-- **人工微调与修复**：（待填）
+- **用户提示词**："你是一个资深 Python GUI 开发者。请用 Tkinter 帮我写一个窗口程序。要求：窗口大小 800x600，标题叫‘补码加减法模拟器’。窗口里面需要有：
+1. 两个输入框（分别用来输入数字A和数字B）。
+2. 一个下拉菜单（可以选择 8 位或 16 位）。
+3. 两个按钮，一个叫‘计算’，一个叫‘重置’。
+4. 一个大大的多行文本框（用来显示计算过程和结果）。
+请帮我把这些组件整齐地排列好，加上详细的中文注释。"
+
+- **AI 原始输出**：```python
+import tkinter as tk
+from tkinter import ttk
+
+# ========== 底层补码运算函数（项目原有逻辑，直接使用） ==========
+def add_binary(a_bin, b_bin):
+    """8位二进制补码加法，返回结果字符串+溢出标记"""
+    width = len(a_bin)
+    carry = 0
+    result = []
+    overflow = False
+    # 从最低位逐位相加
+    for ai, bi in reversed(list(zip(a_bin, b_bin))):
+        a = int(ai)
+        b = int(bi)
+        total = a + b + carry
+        bit = total % 2
+        carry = total // 2
+        result.insert(0, str(bit))
+    # 溢出判断：两个符号位相同，但结果符号位相反
+    if a_bin[0] == b_bin[0] and result[0] != a_bin[0]:
+        overflow = True
+    res_str = "".join(result)
+    return res_str, overflow
+
+def int2twos(num, bits):
+    """十进制转对应位数补码字符串"""
+    limit = 1 << (bits - 1)
+    if not (-limit <= num <= limit -1):
+        raise ValueError(f"数字超出{bits}位补码范围！范围：{-limit} ~ {limit-1}")
+    if num >= 0:
+        raw = bin(num)[2:].zfill(bits)
+    else:
+        raw = bin(2**bits + num)[2:]
+    return raw
+
+# ========== Tkinter GUI界面 ==========
+root = tk.Tk()
+root.title("补码加减法模拟器")
+root.geometry("800x600")
+
+# 标签与输入框
+tk.Label(root, text="数字A：", font=("SimSun",12)).place(x=40, y=30)
+entry_a = tk.Entry(root, font=("SimSun",12), width=15)
+entry_a.place(x=110, y=30)
+
+tk.Label(root, text="数字B：", font=("SimSun",12)).place(x=300, y=30)
+entry_b = tk.Entry(root, font=("SimSun",12), width=15)
+entry_b.place(x=370, y=30)
+
+# 位数下拉选择
+tk.Label(root, text="位数：", font=("SimSun",12)).place(x=540, y=30)
+bit_var = tk.StringVar(value="8位")
+combo_bit = ttk.Combobox(root, textvariable=bit_var, values=["8位","16位"], width=8, state="readonly")
+combo_bit.place(x=595, y=30)
+
+# 多行文本框，输出计算过程
+tk.Label(root, text="计算过程与结果：", font=("SimSun",12)).place(x=40,y=80)
+txt_out = tk.Text(root, font=("SimSun",11), width=90, height=22)
+txt_out.place(x=40, y=110)
+
+# 计算按钮回调
+def on_calc():
+    txt_out.delete(1.0, tk.END)
+    try:
+        numA = int(entry_a.get())
+        numB = int(entry_b.get())
+        bits = 8 if bit_var.get()=="8位" else 16
+        binA = int2twos(numA, bits)
+        binB = int2twos(numB, bits)
+        res_bin, overflow = add_binary(binA, binB)
+        res_dec = int(res_bin,2)
+        if res_dec >= (1 << (bits-1)):
+            res_dec -= (1 << bits)
+        txt_out.insert(tk.END, f"A={numA}, 补码：{binA}\n")
+        txt_out.insert(tk.END, f"B={numB}, 补码：{binB}\n")
+        txt_out.insert(tk.END, f"补码相加结果：{res_bin}\n")
+        txt_out.insert(tk.END, f"十进制结果：{res_dec}\n")
+        txt_out.insert(tk.END, f"溢出判定：{'发生溢出' if overflow else '无溢出'}\n")
+    except Exception as e:
+        txt_out.insert(tk.END, f"输入错误！{str(e)}")
+
+# 重置按钮回调
+def on_reset():
+    entry_a.delete(0, tk.END)
+    entry_b.delete(0, tk.END)
+    txt_out.delete(1.0, tk.END)
+
+btn_calc = tk.Button(root, text="计算", command=on_calc, font=("SimSun",11), width=10)
+btn_calc.place(x=180, y=530)
+btn_reset = tk.Button(root, text="重置", command=on_reset, font=("SimSun",11), width=10)
+btn_reset.place(x=400, y=530)
+
+root.mainloop()
+- **发现的问题**：
+1. 仅实现加法，没有减法功能（补码减法 = A + (-B)，代码没有处理取负逻辑）
+
+2. 没有分步展示原码、反码、补码转换的过程，只直接输出最终补码，不满足模拟器分步演示的需求
+
+- **人工微调与修复**：
+- 修改提示词，增加需求：支持加减法切换，并且输出原码、反码、补码的每一步转换过程，把减法转换为加上B负数的补码，打印每一步演算细节。
+- <img width="1156" height="2510" alt="59d20be485be13366dd943896857b76a" src="https://github.com/user-attachments/assets/77ce08f9-df51-4838-a1c2-23840ff1c48a" />
+
