@@ -7,47 +7,56 @@
 
 **AI 原始输出**：
 
-```text
+```python
 #.--边界校验.
-if not isinstance (bits. int) or bits <1:
-raise ValueError("bits 必须是太于等于!的正整数")
+if not isinstance(bits, int) or bits < 1:
+    raise ValueError("bits 必须是太于等于!的正整数")
 #n位有符号整数范围:[-2^(bits-1).2"
-(bits-1)-11
-min_val=-(1<<(bits-1)) max_val=(1<<(bits-1))-1 if not isinstance (num. int):
-raise TypeError("num 必须是十进制整数")
-if not (min_val <= num <= max_val)
-raise OverflowError(f"数字(num)超出(bits)位有符号整数范围[(min.val),(max va[\]")
+# (bits-1)-11
+min_val = -(1 << (bits-1))
+max_val = (1 << (bits-1)) - 1
+if not isinstance(num, int):
+    raise TypeError("num 必须是十进制整数")
+if not (min_val <= num <= max_val):
+    raise OverflowError(f"数字(num)超出(bits)位有符号整数范围[{min_val},{max_val}]")
 
-if num>=0
-#==========正数处理=========
+if num >= 0:
+    #==========正数处理=========
+    #bin()返回'Obxxxxx'，切片去掉Ob.zfill外商到t信
+    origin = bin(num)[2:].zfill(bits)
+    reverse = origin  #正数反码=原码 
+    complement = origin  #正数补码=原码 
+else:
+    #==========负数处理=========
+    abs_num = -num
+    #先写出绝对值的二进制，补齐bits-1住(留给符号位)
+    abs_bin = bin(abs_num)[2:].zfill(bits-1)  #原码:符号位固定1+绝对值二进制 
+    origin = "1" + abs_bin
+    
+    #反码:符号位不变，后面数值位逐
+    #任取改
+    sign_bit = origin[0] 
+    value_bits = origin[1:]
+    #按位取反:'0''1.'1''0
+    reversed_value = "".join('1' if c == '0' else '0' for c in value_bits)
+    reverse = sign_bit + reversed_value
 
-#bin()返回'Obxxxxx'，切片去掉Ob.zfill外商到t信
-origin=bin(num)[2:].zfill(bits)
-reverse=origin#正数反码=原码 complement=origin#正数补码=原码 else:
-#==========负数处理=========
-
-abs_num=-num
-#先写出绝对值的二进制，补齐bits-1住(留给符号位)
-abs_bin=bin(abs_num)[2:].zfill(bits-1)#原码:符号位固定1+绝对值二进制 origin="1"+abs_bin
-#反码:符号位不变，后面数值位逐
-
-任取改
-sign_bit=origin[0] value_bits=origin[1:]
-#按位取反:'0''1.'1''0
-reversed_value ="join('1 if c== '0' else(' for c in value_bits)
-reverse = sign_bit + reversed_value
-
-#补码=反码+1
-#把反码字符串转成整数，+1.再转回二进制，去掉Ob.补前导0
-reverse_int= int(reverse.2) complement_int = reverse_int +1
-complement = bin(complement_int)[2:]. zfill(bits)
+    #补码=反码+1
+    #把反码字符串转成整数，+1.再转回二进制，去掉Ob.补前导0
+    reverse_int = int(reverse, 2) 
+    complement_int = reverse_int + 1
+    complement = bin(complement_int)[2:].zfill(bits)
 
 #拼接三个码.空格隔开返回
-return f"(origin) (reverse) (complement)"
-#一	测试示例	
-if__name__==	"_.main_."	
-print(get_codes(5.8))#正数5.8位 print(get_codes(-5.8))#负数-5.8位 print(get_codes(0.8))#数字0.8位 print(get_codes(-1.4)) #-1.4位
-运行输出示例
+return f"{origin} {reverse} {complement}"
+
+#一    测试示例    
+if __name__ == "__main__":
+    print(get_codes(5, 8))  #正数5.8位 
+    print(get_codes(-5, 8))  #负数-5.8位 
+    print(get_codes(0, 8))  #数字0.8位 
+    print(get_codes(-1, 4))  #-1.4位
+# 运行输出示例
 ```
 
 **发现的问题**：AI没处理-128，运行时报错
