@@ -1,54 +1,91 @@
 def get_codes(num, bits):
     """
-    计算指定位数下一个整数的原码、反码、补码，以字典返回
+    计算给定数字的原码、反码、补码，同时返回按位拆分的字符列表，方便前端逐位高亮
     :param num: 十进制整数
-    :param bits: 二进制位数（正整数，常用8）
-    :return: 字典，键固定为 'yuan','fan','bu'；值为字符串
-             特殊：bits=8且num=-128时，yuan='无'，fan='无'，bu='10000000'
+    :param bits: 二进制位数，只支持 8 / 16
+    :return: 字典，包含6个key
+        yuan: 原码字符串 | 超出范围/特殊最小值时为"无"
+        fan: 反码字符串 | 超出范围/特殊最小值时为"无"
+        bu: 补码字符串
+        yuan_list: 原码每一位组成的字符列表
+        fan_list: 反码每一位组成的字符列表
+        bu_list: 补码每一位组成的字符列表
+    特殊规则：
+        8位：-128，无原反码，补码 10000000
+        16位：-32768，无原反码，补码 1000000000000000
     """
-    # 处理特殊情况：8位的-128，只有补码，没有原码反码
-    if bits == 8 and num == -128:
+    # 定义对应位数的有符号最小值
+    min_val = {8: -128, 16: -32768}[bits]
+    max_val = {8: 127, 16: 32767}[bits]
+
+    # 边界判断：数字超出当前bits能表示的范围
+    if not (min_val <= num <= max_val):
+        yuan_str = "无"
+        fan_str = "无"
+        bu_str = "无"
+        yuan_list = ["无"]
+        fan_list = ["无"]
+        bu_list = ["无"]
         return {
-            "yuan": "无",
-            "fan": "无",
-            "bu": "10000000"
+            "yuan": yuan_str,
+            "fan": fan_str,
+            "bu": bu_str,
+            "yuan_list": yuan_list,
+            "fan_list": fan_list,
+            "bu_list": bu_list
         }
 
-    # 正数：原码、反码、补码完全相同，高位补0凑够bits位
+    # 判断是不是该位数的特殊最小值（-128 / -32768）
+    if num == min_val:
+        yuan_str = "无"
+        fan_str = "无"
+        bu_str = "1" + "0" * (bits - 1)
+        yuan_list = ["无"]
+        fan_list = ["无"]
+        bu_list = list(bu_str)
+        return {
+            "yuan": yuan_str,
+            "fan": fan_str,
+            "bu": bu_str,
+            "yuan_list": yuan_list,
+            "fan_list": fan_list,
+            "bu_list": bu_list
+        }
+
+    # 正数处理：原码、反码、补码相同
     if num >= 0:
-        # bin()返回'0bxxxx'，切片去掉0b，zfill向左补0到指定位数
-        binary = bin(num)[2:].zfill(bits)
-        yuan = binary
-        fan = binary
-        bu = binary
-    # 负数处理
+        code_str = format(num, f'0{bits}b')
+        yuan_str = code_str
+        fan_str = code_str
+        bu_str = code_str
     else:
+        # 负数（不是特殊最小值）
         abs_num = -num
-        # 先写出绝对值的二进制，补0凑bits位（这就是负数原码的数值位，最高位符号位是1）
-        abs_bin = bin(abs_num)[2:].zfill(bits)
-        # 原码：最高位符号1，后面接上绝对值的二进制
-        yuan = "1" + abs_bin[1:]
-
-        # 反码：符号位不变，数值位全部取反
-        fan_list = []
-        for idx, c in enumerate(yuan):
+        yuan_str = format(abs_num, f'0{bits}b')
+        # 原码符号位是1
+        yuan_str = '1' + yuan_str[1:]
+        # 反码：符号位不变，其余取反
+        fan_list_temp = []
+        for idx, c in enumerate(yuan_str):
             if idx == 0:
-                # 符号位保持不变
-                fan_list.append(c)
+                fan_list_temp.append('1')
             else:
-                # 数值位 0变1，1变0
-                fan_list.append("1" if c == "0" else "0")
-        fan = "".join(fan_list)
-
+                fan_list_temp.append('1' if c == '0' else '0')
+        fan_str = ''.join(fan_list_temp)
         # 补码 = 反码 + 1
-        # 把反码字符串转为整数，加1，再转二进制，去掉0b，保证长度为bits位
-        fan_int = int(fan, 2)
+        fan_int = int(fan_str, 2)
         bu_int = fan_int + 1
-        bu = bin(bu_int)[2:].zfill(bits)
+        bu_str = format(bu_int, f'0{bits}b')
 
-    # 返回固定三键的字典
+    yuan_list = list(yuan_str)
+    fan_list = list(fan_str)
+    bu_list = list(bu_str)
+
     return {
-        "yuan": yuan,
-        "fan": fan,
-        "bu": bu
+        "yuan": yuan_str,
+        "fan": fan_str,
+        "bu": bu_str,
+        "yuan_list": yuan_list,
+        "fan_list": fan_list,
+        "bu_list": bu_list
     }
