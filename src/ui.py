@@ -5,27 +5,15 @@ from tkinter import ttk, messagebox
 # 1 号同学的代码 (convert.py 拼装位置)
 # ============================================================
 def get_codes(num, bits):
-    """
-    计算指定位数下一个整数的原码、反码、补码，以字典返回
-    特殊：bits=8且num=-128时，yuan='无'，fan='无'，bu='10000000'
-    """
     if bits == 8 and num == -128:
-        return {
-            "yuan": "无",
-            "fan": "无",
-            "bu": "10000000"
-        }
-
+        return {"yuan": "无", "fan": "无", "bu": "10000000"}
     if num >= 0:
         binary = bin(num)[2:].zfill(bits)
-        yuan = binary
-        fan = binary
-        bu = binary
+        return {"yuan": binary, "fan": binary, "bu": binary}
     else:
         abs_num = -num
         abs_bin = bin(abs_num)[2:].zfill(bits)
         yuan = "1" + abs_bin[1:]
-
         fan_list = []
         for idx, c in enumerate(yuan):
             if idx == 0:
@@ -33,21 +21,25 @@ def get_codes(num, bits):
             else:
                 fan_list.append("1" if c == "0" else "0")
         fan = "".join(fan_list)
-
         fan_int = int(fan, 2)
         bu_int = fan_int + 1
         bu = bin(bu_int)[2:].zfill(bits)
-
-    return {"yuan": yuan, "fan": fan, "bu": bu}
+        return {"yuan": yuan, "fan": fan, "bu": bu}
 
 
 # ============================================================
+<<<<<<< Updated upstream
 # 2 号同学的代码 (calc.py 拼装位置) - 由 3号 同学修改以适配动画
 # ============================================================
 def add_binary_with_steps(a_bin: str, b_bin: str, bits: int) -> dict:
     """
     执行补码加法，并返回每一步的明细（steps），用于 3号 同学的动画展示。
     """
+=======
+# 2 号同学的代码 (calc.py 拼装位置) - 3号修改以适配动画
+# ============================================================
+def add_binary_with_steps(a_bin: str, b_bin: str, bits: int) -> dict:
+>>>>>>> Stashed changes
     if len(a_bin) != bits or len(b_bin) != bits:
         raise ValueError(f"输入字符串长度必须等于 {bits}")
     
@@ -57,16 +49,23 @@ def add_binary_with_steps(a_bin: str, b_bin: str, bits: int) -> dict:
 
     # 从右往左（低位到高位）遍历
     for i in range(bits - 1, -1, -1):
+<<<<<<< Updated upstream
         # 计算 bit_idx，0 表示最低位（最右边）
         bit_idx = bits - 1 - i
         
+=======
+        bit_idx = bits - 1 - i
+>>>>>>> Stashed changes
         a_bit = int(a_bin[i])
         b_bit = int(b_bin[i])
         total = a_bit + b_bit + carry
         result_bit = total % 2
         carry_out = total // 2
         
+<<<<<<< Updated upstream
         # 记录当前步，完全符合 2号 林飞飞同学的数据格式
+=======
+>>>>>>> Stashed changes
         steps.append({
             "bit_idx": bit_idx,
             "a_bit": a_bit,
@@ -89,16 +88,28 @@ def add_binary_with_steps(a_bin: str, b_bin: str, bits: int) -> dict:
 
 
 # ============================================================
+<<<<<<< Updated upstream
 # 3 号同学的代码 (ui.py 界面与拼装逻辑)
+=======
+# 3 号同学的代码 (ui.py 界面与动画逻辑)
+>>>>>>> Stashed changes
 # ============================================================
 class ComplementSimulator:
     def __init__(self, root: tk.Tk):
         self.root = root
+<<<<<<< Updated upstream
         self.root.title("补码加减法模拟器 - 3号同学可视化界面")
         self.root.geometry("950x750") # 稍微加大窗口以容纳左侧文本框和右侧动画画板
         self.root.resizable(False, False)
 
         # --- 3号同学增加的动画状态变量 ---
+=======
+        self.root.title("补码加减法模拟器 - 3号动画版")
+        self.root.geometry("950x700")
+        self.root.resizable(False, False)
+
+        # 动画状态变量
+>>>>>>> Stashed changes
         self.steps = []
         self.current_step_idx = 0
         self.is_playing = False
@@ -132,7 +143,10 @@ class ComplementSimulator:
         self.btn_reset = tk.Button(btn_frame, text="重置", width=10, height=2, font=("微软雅黑", 12, "bold"), bg="#f44336", fg="white", command=self.on_reset)
         self.btn_reset.pack(side="left", padx=5)
 
+<<<<<<< Updated upstream
         # 3号新增的动画按钮，默认禁用，等计算后再启用
+=======
+>>>>>>> Stashed changes
         self.btn_prev = tk.Button(btn_frame, text="上一步", width=10, height=2, font=("微软雅黑", 12), state="disabled", command=self.prev_step)
         self.btn_prev.pack(side="left", padx=5)
 
@@ -142,11 +156,19 @@ class ComplementSimulator:
         self.btn_auto = tk.Button(btn_frame, text="自动播放", width=10, height=2, font=("微软雅黑", 12), state="disabled", command=self.toggle_auto_play)
         self.btn_auto.pack(side="left", padx=5)
 
+<<<<<<< Updated upstream
         # ---------- 结果输出区 (左右分栏设计) ----------
         mid_frame = tk.Frame(root)
         mid_frame.pack(padx=20, pady=5, fill="both", expand=True)
 
         # 左侧：文本输出区
+=======
+        # ---------- 核心展示区（左右分栏） ----------
+        mid_frame = tk.Frame(root)
+        mid_frame.pack(padx=20, pady=5, fill="both", expand=True)
+
+        # 左侧：文本输出
+>>>>>>> Stashed changes
         text_frame = tk.Frame(mid_frame)
         text_frame.pack(side="left", fill="both", expand=True)
         self.text_output = tk.Text(text_frame, font=("Consolas", 11), bg="#1e1e1e", fg="#dcdcdc", wrap="word", width=40)
@@ -155,7 +177,11 @@ class ComplementSimulator:
         scrollbar.pack(side="right", fill="y")
         self.text_output.config(yscrollcommand=scrollbar.set)
 
+<<<<<<< Updated upstream
         # 右侧：3号同学增加的动画画板区
+=======
+        # 右侧：动画画板区
+>>>>>>> Stashed changes
         self.canvas_frame = tk.Frame(mid_frame, bg="#f0f0f0", relief="sunken", borderwidth=2)
         self.canvas_frame.pack(side="right", fill="both", expand=True, padx=(10, 0))
         
@@ -169,6 +195,7 @@ class ComplementSimulator:
 
     def show_welcome(self):
         self.text_output.delete("1.0", "end")
+<<<<<<< Updated upstream
         hint = (
             "欢迎使用 补码加减法模拟器！\n"
             "─────────────────────────────────────\n"
@@ -179,6 +206,9 @@ class ComplementSimulator:
             "     『上一步』『下一步』或『自动播放』\n"
             "     查看加法进位的完整过程！\n"
         )
+=======
+        hint = "欢迎使用 补码加减法模拟器！\n\n1. 输入 A 和 B，点击『计算』\n2. 右侧会生成动画格子\n3. 点击下方按钮查看进位过程"
+>>>>>>> Stashed changes
         self.text_output.insert("1.0", hint)
 
     def on_reset(self):
@@ -221,15 +251,24 @@ class ComplementSimulator:
 
     def perform_and_display(self, a: int, b: int, bits: int):
         self.text_output.delete("1.0", "end")
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
         res_a = get_codes(a, bits)
         res_b = get_codes(b, bits)
         res_neg_b = get_codes(-b, bits) 
+        
+        sum_result = add_binary_with_steps(res_a['bu'], res_b['bu'], bits)
+        diff_result = add_binary_with_steps(res_a['bu'], res_neg_b['bu'], bits)
 
+<<<<<<< Updated upstream
         # 3号调用 2号修改后的带步骤函数
         sum_result = add_binary_with_steps(res_a['bu'], res_b['bu'], bits)
         diff_result = add_binary_with_steps(res_a['bu'], res_neg_b['bu'], bits)
 
+=======
+>>>>>>> Stashed changes
         lines = []
         lines.append(f"字长：{bits}位 | A = {a}, B = {b}\n")
         lines.append(f"A 补码：{res_a['bu']}")
@@ -238,7 +277,11 @@ class ComplementSimulator:
         lines.append(f"溢出：{'是' if sum_result['is_overflow'] else '否'}")
         self.text_output.insert("1.0", "\n".join(lines))
 
+<<<<<<< Updated upstream
         # ======== 3号核心：绘制动画格子 ========
+=======
+        # ======== 绘制动画 ========
+>>>>>>> Stashed changes
         self.steps = sum_result['steps']
         self.current_step_idx = 0
         
@@ -246,19 +289,36 @@ class ComplementSimulator:
             widget.destroy()
         self.ui_blocks = {'yuan': [], 'fan': [], 'bu': []}
 
+<<<<<<< Updated upstream
         # 画出三行
         self.draw_row("A 补码:", res_a['bu'], "yuan")
         self.draw_row("B 补码:", res_b['bu'], "fan")
         self.draw_row("结  果:", sum_result['result'], "bu")
+=======
+        # 处理 -128 等特殊情况，如果返回 '无'，就用 '-' 填满格子
+        str_a = res_a['bu'] if len(res_a['bu']) == bits else '-' * bits
+        str_b = res_b['bu'] if len(res_b['bu']) == bits else '-' * bits
+        str_res = sum_result['result']
+
+        self.draw_row("A 补码:", str_a, "yuan")
+        self.draw_row("B 补码:", str_b, "fan")
+        self.draw_row("结  果:", str_res, "bu")
+>>>>>>> Stashed changes
 
         self.btn_prev.config(state="normal")
         self.btn_next.config(state="normal")
         self.btn_auto.config(state="normal")
+<<<<<<< Updated upstream
         
         self.update_step(0)
 
     def draw_row(self, title, binary_str, row_key):
         """3号同学的画格子函数"""
+=======
+        self.update_step(0)
+
+    def draw_row(self, title, binary_str, row_key):
+>>>>>>> Stashed changes
         frame = tk.Frame(self.blocks_container, bg="#f0f0f0")
         frame.pack(pady=5)
         tk.Label(frame, text=title, font=("微软雅黑", 12), bg="#f0f0f0", width=8, anchor="e").pack(side="left", padx=5)
@@ -266,37 +326,58 @@ class ComplementSimulator:
         bits = len(binary_str)
         for i in range(bits):
             bit_val = binary_str[i]
+<<<<<<< Updated upstream
             # 符号位（最高位，索引0）用灰色，数值位用蓝色（符合组长防坑提示）
+=======
+>>>>>>> Stashed changes
             bg_color = "#D3D3D3" if i == 0 else "#87CEFA"
             
             lbl = tk.Label(frame, text=bit_val, font=("Consolas", 16, "bold"), width=3, height=1, bg=bg_color, relief="raised", borderwidth=2)
             lbl.pack(side="left", padx=3)
             
+<<<<<<< Updated upstream
             # ui_idx: 0是最低位，所以用 bits-1-i
+=======
+>>>>>>> Stashed changes
             ui_idx = bits - 1 - i
             self.ui_blocks[row_key].append({'ui_idx': ui_idx, 'label': lbl, 'default_bg': bg_color})
 
     def update_step(self, step_idx):
+<<<<<<< Updated upstream
         """3号同学的高亮动画逻辑"""
         if not self.steps or step_idx < 0 or step_idx >= len(self.steps):
             return
 
         # 1. 恢复默认颜色
+=======
+        if not self.steps or step_idx < 0 or step_idx >= len(self.steps):
+            return
+
+>>>>>>> Stashed changes
         for row_key in self.ui_blocks:
             for block in self.ui_blocks[row_key]:
                 block['label'].config(bg=block['default_bg'])
 
+<<<<<<< Updated upstream
         # 2. 获取当前步数据
         step_data = self.steps[step_idx]
         target_bit = step_data['bit_idx']
 
         # 3. 将匹配的位高亮为黄色
+=======
+        step_data = self.steps[step_idx]
+        target_bit = step_data['bit_idx']
+
+>>>>>>> Stashed changes
         for row_key in self.ui_blocks:
             for block in self.ui_blocks[row_key]:
                 if block['ui_idx'] == target_bit:
                     block['label'].config(bg="yellow")
 
+<<<<<<< Updated upstream
         # 4. 更新文字信息展示进位
+=======
+>>>>>>> Stashed changes
         carry_in = step_data['carry_in']
         carry_out = step_data['carry_out']
         info_text = f"当前计算：第 {target_bit} 位 (bit_idx={target_bit})\n"
@@ -314,7 +395,10 @@ class ComplementSimulator:
             self.update_step(self.current_step_idx)
 
     def toggle_auto_play(self):
+<<<<<<< Updated upstream
         """3号同学防卡死的自动播放逻辑"""
+=======
+>>>>>>> Stashed changes
         if self.is_playing:
             self.is_playing = False
             self.btn_auto.config(text="自动播放")
@@ -331,7 +415,10 @@ class ComplementSimulator:
         if self.current_step_idx < len(self.steps) - 1:
             self.current_step_idx += 1
             self.update_step(self.current_step_idx)
+<<<<<<< Updated upstream
             # 使用 root.after 延迟 1000 毫秒，绝不使用 time.sleep
+=======
+>>>>>>> Stashed changes
             self.after_id = self.root.after(1000, self.auto_play_loop) 
         else:
             self.is_playing = False
