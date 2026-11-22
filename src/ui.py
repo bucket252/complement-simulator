@@ -1,364 +1,345 @@
-# -*- coding: utf-8 -*-
-"""
-补码加减法模拟器
-----------------
-使用 Tkinter 编写的 GUI 程序，支持：
-  1. 输入两个整数 A、B（支持负数）
-  2. 选择 8 位或 16 位字长
-  3. 计算 A+B 与 A-B 的补码运算过程
-  4. 展示原码、反码、补码、运算过程、溢出判断等详细信息
-"""
-
 import tkinter as tk
 from tkinter import ttk, messagebox
 
+# ============================================================
+# 1 号同学的代码 (convert.py 拼装位置)
+# ============================================================
+def get_codes(num, bits):
+    """
+    计算指定位数下一个整数的原码、反码、补码，以字典返回
+    特殊：bits=8且num=-128时，yuan='无'，fan='无'，bu='10000000'
+    """
+    if bits == 8 and num == -128:
+        return {
+            "yuan": "无",
+            "fan": "无",
+            "bu": "10000000"
+        }
+
+    if num >= 0:
+        binary = bin(num)[2:].zfill(bits)
+        yuan = binary
+        fan = binary
+        bu = binary
+    else:
+        abs_num = -num
+        abs_bin = bin(abs_num)[2:].zfill(bits)
+        yuan = "1" + abs_bin[1:]
+
+        fan_list = []
+        for idx, c in enumerate(yuan):
+            if idx == 0:
+                fan_list.append(c)
+            else:
+                fan_list.append("1" if c == "0" else "0")
+        fan = "".join(fan_list)
+
+        fan_int = int(fan, 2)
+        bu_int = fan_int + 1
+        bu = bin(bu_int)[2:].zfill(bits)
+
+    return {"yuan": yuan, "fan": fan, "bu": bu}
+
 
 # ============================================================
-# 一、补码运算的核心函数（与 GUI 分离，便于测试与复用）
+# 2 号同学的代码 (calc.py 拼装位置) - 由 3号 同学修改以适配动画
 # ============================================================
-
-def int_to_twos_complement(value: int, bits: int) -> str:
+def add_binary_with_steps(a_bin: str, b_bin: str, bits: int) -> dict:
     """
-    将整数转换成指定字长的补码二进制字符串。
-    原理：Python 的整数是无限精度的，负数直接用 (1<<bits)+value 转换为无符号数即可。
+    执行补码加法，并返回每一步的明细（steps），用于 3号 同学的动画展示。
     """
-    # 先做范围检查：n 位补码能表示的范围是 [-2^(n-1), 2^(n-1)-1]
-    min_val = -(1 << (bits - 1))
-    max_val = (1 << (bits - 1)) - 1
-    if value < min_val or value > max_val:
-        raise ValueError(f"{value} 超出 {bits} 位补码可表示范围 [{min_val}, {max_val}]")
+    if len(a_bin) != bits or len(b_bin) != bits:
+        raise ValueError(f"输入字符串长度必须等于 {bits}")
+    
+    result_bits = ['0'] * bits
+    carry = 0
+    steps = []
 
-    # 负数转成无符号表示，正数直接使用
-    if value < 0:
-        value = (1 << bits) + value
-    # 格式化为定长二进制字符串，前面补 0
-    return format(value, f"0{bits}b")
-
-
-def twos_complement_to_int(binary_str: str) -> int:
-    """
-    将补码二进制字符串转换回整数。
-    原理：最高位为 1 表示负数，值为 二进制值 - 2^bits。
-    """
-    bits = len(binary_str)
-    value = int(binary_str, 2)
-    # 最高位是 1 则为负数
-    if binary_str[0] == '1':
-        value -= (1 << bits)
-    return value
-
-
-def add_binary(a: str, b: str, bits: int) -> tuple:
-    """
-    按位做二进制加法（模拟硬件加法器）。
-    返回 (结果位串, 最高位进位, 次高位进位)。
-    这两个进位用于判断溢出。
-    """
-    result = []          # 存放结果的每一位
-    carry = 0            # 当前进位
-    carry_out_msb = 0    # 最高位产生的进位（第 bits 位）
-    carry_out_prev = 0   # 次高位产生的进位（第 bits-1 位）
-
-    # 从最低位往最高位逐位相加
+    # 从右往左（低位到高位）遍历
     for i in range(bits - 1, -1, -1):
-        ai = int(a[i])
-        bi = int(b[i])
-        s = ai + bi + carry
-        result.append(str(s & 1))   # 本位结果
-        carry = s >> 1              # 新的进位
-        # 记录关键位置的两个进位
-        if i == 0:        # 处理完最高位后 carry 就是最高位进位
-            carry_out_msb = carry
-        if i == 1:        # 处理完次高位后的进位
-            carry_out_prev = carry
+        # 计算 bit_idx，0 表示最低位（最右边）
+        bit_idx = bits - 1 - i
+        
+        a_bit = int(a_bin[i])
+        b_bit = int(b_bin[i])
+        total = a_bit + b_bit + carry
+        result_bit = total % 2
+        carry_out = total // 2
+        
+        # 记录当前步，完全符合 2号 林飞飞同学的数据格式
+        steps.append({
+            "bit_idx": bit_idx,
+            "a_bit": a_bit,
+            "b_bit": b_bit,
+            "carry_in": carry,
+            "sum": result_bit,
+            "carry_out": carry_out
+        })
+        
+        result_bits[i] = str(result_bit)
+        carry = carry_out
 
-    # 注意：循环结束后 carry 是"最高位相加后的进位"，
-    # 但为了更直观，我们上面已经记录了 i==0 时的进位。
-    # 修正：i==0 时 carry 还未被使用，此时计算完得到的就是最高位进位。
-    carry_out_msb = carry
+    sign_a = int(a_bin[0])
+    sign_b = int(b_bin[0])
+    sign_res = int(result_bits[0])
+    is_overflow = (sign_a == sign_b) and (sign_a != sign_res)
 
-    # result 是逆序的，需要翻转回来
-    result_str = "".join(reversed(result))
-    return result_str, carry_out_msb, carry_out_prev
-
-
-def detect_overflow(a_bits: str, b_bits: str, result_bits: str) -> bool:
-    """
-    判断溢出（针对加法）：
-    同号相加结果变号，则溢出。
-    也等价于：最高位进位 XOR 次高位进位 = 1
-    """
-    sign_a = a_bits[0]
-    sign_b = b_bits[0]
-    sign_r = result_bits[0]
-    # 同号且结果异号 → 溢出
-    return sign_a == sign_b and sign_r != sign_a
-
-
-def binary_group(bits_str: str) -> str:
-    """把二进制串每 4 位用空格分组，方便阅读。"""
-    groups = []
-    for i in range(0, len(bits_str), 4):
-        groups.append(bits_str[i:i + 4])
-    return " ".join(groups)
+    result = ''.join(result_bits)
+    return {"result": result, "is_overflow": is_overflow, "steps": steps}
 
 
 # ============================================================
-# 二、GUI 界面部分
+# 3 号同学的代码 (ui.py 界面与拼装逻辑)
 # ============================================================
-
 class ComplementSimulator:
-    """补码加减法模拟器主类，封装所有控件与事件。"""
-
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("补码加减法模拟器")
-        self.root.geometry("800x600")
-        self.root.resizable(False, False)  # 固定窗口大小，布局更稳定
+        self.root.title("补码加减法模拟器 - 3号同学可视化界面")
+        self.root.geometry("950x750") # 稍微加大窗口以容纳左侧文本框和右侧动画画板
+        self.root.resizable(False, False)
+
+        # --- 3号同学增加的动画状态变量 ---
+        self.steps = []
+        self.current_step_idx = 0
+        self.is_playing = False
+        self.after_id = None
+        self.ui_blocks = {'yuan': [], 'fan': [], 'bu': []}
 
         # ---------- 顶部输入区 ----------
-        # 用一个 Frame 把所有输入控件打包，方便整体布局
         input_frame = tk.Frame(root)
         input_frame.pack(pady=12, padx=20, fill="x")
 
-        # 数字 A 的标签 + 输入框
-        tk.Label(input_frame, text="数字 A：", font=("微软雅黑", 12)).grid(
-            row=0, column=0, sticky="e", padx=5, pady=5
-        )
+        tk.Label(input_frame, text="数字 A：", font=("微软雅黑", 12)).grid(row=0, column=0, sticky="e", padx=5, pady=5)
         self.entry_a = tk.Entry(input_frame, font=("Consolas", 12), width=18)
         self.entry_a.grid(row=0, column=1, padx=5, pady=5)
 
-        # 数字 B 的标签 + 输入框
-        tk.Label(input_frame, text="数字 B：", font=("微软雅黑", 12)).grid(
-            row=0, column=2, sticky="e", padx=5, pady=5
-        )
+        tk.Label(input_frame, text="数字 B：", font=("微软雅黑", 12)).grid(row=0, column=2, sticky="e", padx=5, pady=5)
         self.entry_b = tk.Entry(input_frame, font=("Consolas", 12), width=18)
         self.entry_b.grid(row=0, column=3, padx=5, pady=5)
 
-        # 字长选择下拉框
-        tk.Label(input_frame, text="字长：", font=("微软雅黑", 12)).grid(
-            row=1, column=0, sticky="e", padx=5, pady=5
-        )
+        tk.Label(input_frame, text="字长：", font=("微软雅黑", 12)).grid(row=1, column=0, sticky="e", padx=5, pady=5)
         self.bits_var = tk.StringVar(value="8 位")
-        self.combo_bits = ttk.Combobox(
-            input_frame,
-            textvariable=self.bits_var,
-            values=["8 位", "16 位"],
-            state="readonly",
-            width=10,
-            font=("微软雅黑", 11)
-        )
+        self.combo_bits = ttk.Combobox(input_frame, textvariable=self.bits_var, values=["8 位", "16 位"], state="readonly", width=10, font=("微软雅黑", 11))
         self.combo_bits.grid(row=1, column=1, padx=5, pady=5, sticky="w")
 
-        # ---------- 按钮区 ----------
+        # ---------- 按钮区 (3号同学增加动画控制按钮) ----------
         btn_frame = tk.Frame(root)
         btn_frame.pack(pady=5)
 
-        self.btn_calc = tk.Button(
-            btn_frame, text="计算", width=12, height=2,
-            font=("微软雅黑", 12, "bold"),
-            bg="#4CAF50", fg="white", activebackground="#45a049",
-            command=self.on_calculate
-        )
-        self.btn_calc.pack(side="left", padx=15)
+        self.btn_calc = tk.Button(btn_frame, text="计算", width=10, height=2, font=("微软雅黑", 12, "bold"), bg="#4CAF50", fg="white", command=self.on_calculate)
+        self.btn_calc.pack(side="left", padx=5)
 
-        self.btn_reset = tk.Button(
-            btn_frame, text="重置", width=12, height=2,
-            font=("微软雅黑", 12, "bold"),
-            bg="#f44336", fg="white", activebackground="#d32f2f",
-            command=self.on_reset
-        )
-        self.btn_reset.pack(side="left", padx=15)
+        self.btn_reset = tk.Button(btn_frame, text="重置", width=10, height=2, font=("微软雅黑", 12, "bold"), bg="#f44336", fg="white", command=self.on_reset)
+        self.btn_reset.pack(side="left", padx=5)
 
-        # ---------- 结果输出区（多行文本框） ----------
-        # 用 Frame 包裹 Text 和 Scrollbar，实现带滚动条的文本框
-        output_frame = tk.Frame(root)
-        output_frame.pack(padx=20, pady=10, fill="both", expand=True)
+        # 3号新增的动画按钮，默认禁用，等计算后再启用
+        self.btn_prev = tk.Button(btn_frame, text="上一步", width=10, height=2, font=("微软雅黑", 12), state="disabled", command=self.prev_step)
+        self.btn_prev.pack(side="left", padx=5)
 
-        self.text_output = tk.Text(
-            output_frame,
-            font=("Consolas", 12),
-            bg="#1e1e1e", fg="#dcdcdc",   # 深色背景，像终端
-            insertbackground="white",
-            wrap="word",
-            relief="sunken",
-            borderwidth=2
-        )
+        self.btn_next = tk.Button(btn_frame, text="下一步", width=10, height=2, font=("微软雅黑", 12), state="disabled", command=self.next_step)
+        self.btn_next.pack(side="left", padx=5)
+
+        self.btn_auto = tk.Button(btn_frame, text="自动播放", width=10, height=2, font=("微软雅黑", 12), state="disabled", command=self.toggle_auto_play)
+        self.btn_auto.pack(side="left", padx=5)
+
+        # ---------- 结果输出区 (左右分栏设计) ----------
+        mid_frame = tk.Frame(root)
+        mid_frame.pack(padx=20, pady=5, fill="both", expand=True)
+
+        # 左侧：文本输出区
+        text_frame = tk.Frame(mid_frame)
+        text_frame.pack(side="left", fill="both", expand=True)
+        self.text_output = tk.Text(text_frame, font=("Consolas", 11), bg="#1e1e1e", fg="#dcdcdc", wrap="word", width=40)
         self.text_output.pack(side="left", fill="both", expand=True)
-
-        scrollbar = tk.Scrollbar(output_frame, command=self.text_output.yview)
+        scrollbar = tk.Scrollbar(text_frame, command=self.text_output.yview)
         scrollbar.pack(side="right", fill="y")
         self.text_output.config(yscrollcommand=scrollbar.set)
 
-        # 首次运行时给一段提示文字
+        # 右侧：3号同学增加的动画画板区
+        self.canvas_frame = tk.Frame(mid_frame, bg="#f0f0f0", relief="sunken", borderwidth=2)
+        self.canvas_frame.pack(side="right", fill="both", expand=True, padx=(10, 0))
+        
+        self.lbl_animation_info = tk.Label(self.canvas_frame, text="等待计算...", font=("微软雅黑", 12, "bold"), bg="#f0f0f0", fg="red")
+        self.lbl_animation_info.pack(pady=10)
+
+        self.blocks_container = tk.Frame(self.canvas_frame, bg="#f0f0f0")
+        self.blocks_container.pack(pady=20)
+
         self.show_welcome()
 
-    # ---------------- 事件处理函数 ----------------
-
     def show_welcome(self):
-        """在结果框显示欢迎/提示信息。"""
         self.text_output.delete("1.0", "end")
         hint = (
             "欢迎使用 补码加减法模拟器！\n"
             "─────────────────────────────────────\n"
             "使用说明：\n"
-            "  1. 在『数字 A』『数字 B』中输入整数（支持负数，如 -5）\n"
-            "  2. 选择字长（8 位 或 16 位）\n"
-            "  3. 点击『计算』查看补码运算过程\n"
-            "  4. 点击『重置』清空所有内容\n"
+            "  1. 输入数字 A 和 B\n"
+            "  2. 点击『计算』生成结果\n"
+            "  3. 右侧会生成动画格子，可使用下方的\n"
+            "     『上一步』『下一步』或『自动播放』\n"
+            "     查看加法进位的完整过程！\n"
         )
         self.text_output.insert("1.0", hint)
 
     def on_reset(self):
-        """重置：清空输入框、恢复默认字长、清空输出区。"""
         self.entry_a.delete(0, "end")
         self.entry_b.delete(0, "end")
         self.bits_var.set("8 位")
         self.text_output.delete("1.0", "end")
+        
+        for widget in self.blocks_container.winfo_children():
+            widget.destroy()
+        self.lbl_animation_info.config(text="等待计算...")
+        self.ui_blocks = {'yuan': [], 'fan': [], 'bu': []}
+        
+        self.btn_prev.config(state="disabled")
+        self.btn_next.config(state="disabled")
+        self.btn_auto.config(state="disabled")
         self.entry_a.focus_set()
 
     def on_calculate(self):
-        """计算按钮的回调：读取输入 → 校验 → 计算 → 显示。"""
-        # 1) 读取并校验输入
+        a_str = self.entry_a.get().strip()
+        b_str = self.entry_b.get().strip()
+
         try:
-            a = int(self.entry_a.get().strip())
-            b = int(self.entry_b.get().strip())
+            if not a_str or not b_str:
+                raise ValueError("输入为空")
+            a = int(a_str)
+            b = int(b_str)
         except ValueError:
-            messagebox.showerror("输入错误", "请输入合法的整数（支持负数）！")
+            messagebox.showerror("错误", "请输入合法数字")
             return
 
-        # 2) 读取字长
         bits = 8 if self.bits_var.get().startswith("8") else 16
-
-        # 3) 检查取值范围
         min_val = -(1 << (bits - 1))
         max_val = (1 << (bits - 1)) - 1
-        if not (min_val <= a <= max_val):
-            messagebox.showerror(
-                "范围错误", f"数字 A = {a} 超出 {bits} 位补码范围 [{min_val}, {max_val}]"
-            )
-            return
-        if not (min_val <= b <= max_val):
-            messagebox.showerror(
-                "范围错误", f"数字 B = {b} 超出 {bits} 位补码范围 [{min_val}, {max_val}]"
-            )
+        if not (min_val <= a <= max_val) or not (min_val <= b <= max_val):
+            messagebox.showerror("范围错误", f"输入超出 {bits} 位范围 [{min_val}, {max_val}]")
             return
 
-        # 4) 计算并展示
         self.perform_and_display(a, b, bits)
 
-    # ---------------- 核心显示逻辑 ----------------
-
     def perform_and_display(self, a: int, b: int, bits: int):
-        """执行补码加法/减法并把过程写入文本框。"""
         self.text_output.delete("1.0", "end")
 
-        # ---- 先计算 A、B 的补码 ----
-        comp_a = int_to_twos_complement(a, bits)
-        comp_b = int_to_twos_complement(b, bits)
+        res_a = get_codes(a, bits)
+        res_b = get_codes(b, bits)
+        res_neg_b = get_codes(-b, bits) 
 
-        # ---- 计算 -B 的补码（用于减法 A - B = A + (-B)） ----
-        # 方法：把 B 的补码按位取反再加 1（这就是求相反数补码的标准做法）
-        # 也可以直接调用 int_to_twos_complement(-b, bits)，这里演示按位运算
-        comp_neg_b = int_to_twos_complement(-b, bits)
+        # 3号调用 2号修改后的带步骤函数
+        sum_result = add_binary_with_steps(res_a['bu'], res_b['bu'], bits)
+        diff_result = add_binary_with_steps(res_a['bu'], res_neg_b['bu'], bits)
 
-        # 记录输出内容的列表，最后一次性写入
         lines = []
-        sep = "═" * 60
-        thin = "─" * 60
-
-        lines.append(sep)
-        lines.append(f"  补码加减法模拟器  |  字长：{bits} 位  |  A = {a}, B = {b}")
-        lines.append(sep)
-
-        # ============ 第一部分：原数与补码表示 ============
-        lines.append("\n【一、补码表示】\n")
-        lines.append(f"  可表示范围：{-(1 << (bits - 1))} ~ {(1 << (bits - 1)) - 1}\n")
-
-        lines.append(f"  数字 A = {a}")
-        lines.append(f"    补码 = {binary_group(comp_a)}  (二进制 {comp_a})")
-        lines.append(f"    数值 = {twos_complement_to_int(comp_a)}")
-
-        lines.append(f"\n  数字 B = {b}")
-        lines.append(f"    补码 = {binary_group(comp_b)}  (二进制 {comp_b})")
-        lines.append(f"    数值 = {twos_complement_to_int(comp_b)}")
-
-        lines.append(f"\n  -B = {-b}")
-        lines.append(f"    补码 = {binary_group(comp_neg_b)}  (二进制 {comp_neg_b})")
-
-        # ============ 第二部分：加法 A + B ============
-        lines.append(f"\n{thin}")
-        lines.append(f"【二、加法运算：A + B = {a} + ({b})】\n")
-
-        sum_bits, carry_msb, carry_prev = add_binary(comp_a, comp_b, bits)
-        overflow_add = detect_overflow(comp_a, comp_b, sum_bits)
-        sum_value = twos_complement_to_int(sum_bits)
-
-        # 用"竖式"形式展示
-        lines.append(f"     A  补码 = {binary_group(comp_a)}")
-        lines.append(f"  +  B  补码 = {binary_group(comp_b)}")
-        lines.append(f"    {thin[4:]}")
-        lines.append(f"     结果补码 = {binary_group(sum_bits)}")
-
-        lines.append(f"\n  最高位进位 = {carry_msb}")
-        lines.append(f"  次高位进位 = {carry_prev}   （两者异或 = {carry_msb ^ carry_prev}）")
-
-        if overflow_add:
-            lines.append("  ⚠ 判断：发生溢出！结果不可信。")
-            lines.append(f"  理论正确结果 = {a + b}，超出 {bits} 位补码范围。")
-        else:
-            lines.append(f"  ✔ 无溢出，结果补码对应的数值 = {sum_value}")
-            # 若是负数，额外展示原码让用户直观感受
-            if sum_value < 0:
-                # 原码 = 符号位保持，数值位取反加一（从补码反推）
-                mag = (1 << (bits - 1)) - (-sum_value) if False else None
-                lines.append(f"    （负数补码，最高位为 1 表示负号）")
-
-        # ============ 第三部分：减法 A - B ============
-        lines.append(f"\n{thin}")
-        lines.append(f"【三、减法运算：A - B = A + (-B) = {a} + ({-b})】\n")
-
-        diff_bits, carry_msb2, carry_prev2 = add_binary(comp_a, comp_neg_b, bits)
-        overflow_sub = detect_overflow(comp_a, comp_neg_b, diff_bits)
-        diff_value = twos_complement_to_int(diff_bits)
-
-        lines.append(f"     A  补码 = {binary_group(comp_a)}")
-        lines.append(f"  + (-B)补码 = {binary_group(comp_neg_b)}")
-        lines.append(f"    {thin[4:]}")
-        lines.append(f"     结果补码 = {binary_group(diff_bits)}")
-
-        lines.append(f"\n  最高位进位 = {carry_msb2}")
-        lines.append(f"  次高位进位 = {carry_prev2}   （两者异或 = {carry_msb2 ^ carry_prev2}）")
-
-        if overflow_sub:
-            lines.append("  ⚠ 判断：发生溢出！结果不可信。")
-            lines.append(f"  理论正确结果 = {a - b}，超出 {bits} 位补码范围。")
-        else:
-            lines.append(f"  ✔ 无溢出，结果补码对应的数值 = {diff_value}")
-
-        # ============ 结尾小结 ============
-        lines.append(f"\n{sep}")
-        if not overflow_add:
-            lines.append(f"  最终：A + B = {a + b}")
-        else:
-            lines.append(f"  最终：A + B = {a + b} （溢出，{bits} 位下无法表示）")
-        if not overflow_sub:
-            lines.append(f"        A - B = {a - b}")
-        else:
-            lines.append(f"        A - B = {a - b} （溢出，{bits} 位下无法表示）")
-        lines.append(sep)
-
-        # 写入文本框
+        lines.append(f"字长：{bits}位 | A = {a}, B = {b}\n")
+        lines.append(f"A 补码：{res_a['bu']}")
+        lines.append(f"B 补码：{res_b['bu']}\n")
+        lines.append(f"A+B 结果：{sum_result['result']}")
+        lines.append(f"溢出：{'是' if sum_result['is_overflow'] else '否'}")
         self.text_output.insert("1.0", "\n".join(lines))
 
+        # ======== 3号核心：绘制动画格子 ========
+        self.steps = sum_result['steps']
+        self.current_step_idx = 0
+        
+        for widget in self.blocks_container.winfo_children():
+            widget.destroy()
+        self.ui_blocks = {'yuan': [], 'fan': [], 'bu': []}
 
-# ============================================================
-# 三、程序入口
-# ============================================================
+        # 画出三行
+        self.draw_row("A 补码:", res_a['bu'], "yuan")
+        self.draw_row("B 补码:", res_b['bu'], "fan")
+        self.draw_row("结  果:", sum_result['result'], "bu")
+
+        self.btn_prev.config(state="normal")
+        self.btn_next.config(state="normal")
+        self.btn_auto.config(state="normal")
+        
+        self.update_step(0)
+
+    def draw_row(self, title, binary_str, row_key):
+        """3号同学的画格子函数"""
+        frame = tk.Frame(self.blocks_container, bg="#f0f0f0")
+        frame.pack(pady=5)
+        tk.Label(frame, text=title, font=("微软雅黑", 12), bg="#f0f0f0", width=8, anchor="e").pack(side="left", padx=5)
+
+        bits = len(binary_str)
+        for i in range(bits):
+            bit_val = binary_str[i]
+            # 符号位（最高位，索引0）用灰色，数值位用蓝色（符合组长防坑提示）
+            bg_color = "#D3D3D3" if i == 0 else "#87CEFA"
+            
+            lbl = tk.Label(frame, text=bit_val, font=("Consolas", 16, "bold"), width=3, height=1, bg=bg_color, relief="raised", borderwidth=2)
+            lbl.pack(side="left", padx=3)
+            
+            # ui_idx: 0是最低位，所以用 bits-1-i
+            ui_idx = bits - 1 - i
+            self.ui_blocks[row_key].append({'ui_idx': ui_idx, 'label': lbl, 'default_bg': bg_color})
+
+    def update_step(self, step_idx):
+        """3号同学的高亮动画逻辑"""
+        if not self.steps or step_idx < 0 or step_idx >= len(self.steps):
+            return
+
+        # 1. 恢复默认颜色
+        for row_key in self.ui_blocks:
+            for block in self.ui_blocks[row_key]:
+                block['label'].config(bg=block['default_bg'])
+
+        # 2. 获取当前步数据
+        step_data = self.steps[step_idx]
+        target_bit = step_data['bit_idx']
+
+        # 3. 将匹配的位高亮为黄色
+        for row_key in self.ui_blocks:
+            for block in self.ui_blocks[row_key]:
+                if block['ui_idx'] == target_bit:
+                    block['label'].config(bg="yellow")
+
+        # 4. 更新文字信息展示进位
+        carry_in = step_data['carry_in']
+        carry_out = step_data['carry_out']
+        info_text = f"当前计算：第 {target_bit} 位 (bit_idx={target_bit})\n"
+        info_text += f"进位输入：{carry_in} -> 进位输出：{carry_out}"
+        self.lbl_animation_info.config(text=info_text)
+
+    def next_step(self):
+        if self.current_step_idx < len(self.steps) - 1:
+            self.current_step_idx += 1
+            self.update_step(self.current_step_idx)
+
+    def prev_step(self):
+        if self.current_step_idx > 0:
+            self.current_step_idx -= 1
+            self.update_step(self.current_step_idx)
+
+    def toggle_auto_play(self):
+        """3号同学防卡死的自动播放逻辑"""
+        if self.is_playing:
+            self.is_playing = False
+            self.btn_auto.config(text="自动播放")
+            if self.after_id:
+                self.root.after_cancel(self.after_id)
+        else:
+            self.is_playing = True
+            self.btn_auto.config(text="暂停播放")
+            self.auto_play_loop()
+
+    def auto_play_loop(self):
+        if not self.is_playing:
+            return
+        if self.current_step_idx < len(self.steps) - 1:
+            self.current_step_idx += 1
+            self.update_step(self.current_step_idx)
+            # 使用 root.after 延迟 1000 毫秒，绝不使用 time.sleep
+            self.after_id = self.root.after(1000, self.auto_play_loop) 
+        else:
+            self.is_playing = False
+            self.btn_auto.config(text="自动播放")
+
 
 if __name__ == "__main__":
     root = tk.Tk()
-    # 让字体在 Windows 上更清晰（可选）
     try:
         root.tk.call("tk", "scaling", 1.2)
     except Exception:
