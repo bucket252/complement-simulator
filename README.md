@@ -13,7 +13,10 @@
 3. 在终端运行：`python src/main.py`
 
 ## 📸 运行截图
-*(待补充：后续插入程序的高清截图)*
+<img width="1556" height="1246" alt="ddbde26ee2a6245707945fa76fad6ddb" src="https://github.com/user-attachments/assets/91d96821-b1e3-49f8-a323-709f99717894" />
+<img width="1566" height="1240" alt="9f82325a252f5e165af3b7e8b9bf30c7" src="https://github.com/user-attachments/assets/79c51d12-80fb-4669-91d7-4aaad593c9e3" />
+图为程序运行界面。系统不仅能准确计算原反补码，还能精准判断溢出（如 120+10）并给出理论正确值，同时具备强大的异常输入拦截功能（如输入字母自动弹窗提示）。
+
 
 ## 👥 团队分工
 | 姓名 | GitHub 用户名 | 负责模块 |
