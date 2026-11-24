@@ -1,6 +1,6 @@
 import tkinter as tk
 from convert import get_codes
-from calc_add import add_binary
+from calc import add_binary
 
 
 class ComplementSimulator:
@@ -147,6 +147,13 @@ class ComplementSimulator:
             self.b_bin = self.res_b["bu"]
             self.res_bin = self.sum_result["result"]
             self.bit_idx = 0
+
+            # 初始化第一步进位，从steps读取
+            if self.sum_result and "steps" in self.sum_result and len(self.sum_result["steps"]) > 0:
+                first_step = self.sum_result["steps"][0]
+                self.carry_in = first_step["carry_in"]
+                self.carry_out = first_step["carry_out"]
+
             self.draw_bit_canvas()
         except Exception as e:
             self.text_output.insert("1.0", f"错误：{str(e)}")
@@ -197,21 +204,39 @@ class ComplementSimulator:
 
     def next_bit(self):
         self.stop_auto()
-        if self.bit_idx < self.max_bit - 1:
+        if self.sum_result is None or "steps" not in self.sum_result:
+            return
+        steps = self.sum_result["steps"]
+        if self.bit_idx < len(steps) - 1:
             self.bit_idx += 1
+            current_step = steps[self.bit_idx]
+            self.carry_in = current_step["carry_in"]
+            self.carry_out = current_step["carry_out"]
             self.draw_bit_canvas()
 
     def prev_bit(self):
         self.stop_auto()
+        if self.sum_result is None or "steps" not in self.sum_result:
+            return
+        steps = self.sum_result["steps"]
         if self.bit_idx > 0:
             self.bit_idx -= 1
+            current_step = steps[self.bit_idx]
+            self.carry_in = current_step["carry_in"]
+            self.carry_out = current_step["carry_out"]
             self.draw_bit_canvas()
 
     def auto_play(self):
         self.stop_auto()
         def run():
-            if self.bit_idx < self.max_bit -1:
+            if self.sum_result is None or "steps" not in self.sum_result:
+                return
+            steps = self.sum_result["steps"]
+            if self.bit_idx < len(steps) -1:
                 self.bit_idx +=1
+                current_step = steps[self.bit_idx]
+                self.carry_in = current_step["carry_in"]
+                self.carry_out = current_step["carry_out"]
                 self.draw_bit_canvas()
                 self.auto_timer_id = self.root.after(600, run)
         run()
@@ -224,6 +249,8 @@ class ComplementSimulator:
     def reset_all(self):
         self.stop_auto()
         self.bit_idx = 0
+        self.carry_in = 0
+        self.carry_out = 0
         self.a_bin = ""
         self.b_bin = ""
         self.res_bin = ""
