@@ -14,8 +14,8 @@
 3. 在终端运行：`python src/main.py`
 
 ## 📸 运行截图
-<img width="1556" height="1246" alt="ddbde26ee2a6245707945fa76fad6ddb" src="https://github.com/user-attachments/assets/91d96821-b1e3-49f8-a323-709f99717894" />
-<img width="1566" height="1240" alt="9f82325a252f5e165af3b7e8b9bf30c7" src="https://github.com/user-attachments/assets/79c51d12-80fb-4669-91d7-4aaad593c9e3" />
+<img width="1065" height="828" alt="cd18a9b54a420fb6becc2648e766cc38" src="https://github.com/user-attachments/assets/2e1e9fd7-92aa-4834-ab17-c4224bd9b313" />
+*图为最终版分步高亮演示，黄色表示当前计算位，符号位已用红色标出。*
 图为程序运行界面。系统不仅能准确计算原反补码，还能精准判断溢出（如 120+10）并给出理论正确值，同时具备强大的异常输入拦截功能（如输入字母自动弹窗提示）。
 
 
